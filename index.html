@@ -205,6 +205,17 @@
     }
     .sim-caption strong { color: var(--gold); font-weight: 600; }
 
+    /* ── REFERENCE VIDEO ──────────────────── */
+    .ref-video { background: #fff; }
+    .ref-embed-wrap {
+      display: flex;
+      justify-content: center;
+    }
+    .ref-embed-wrap .instagram-media {
+      border-radius: 12px !important;
+      overflow: hidden;
+    }
+
     /* ── COMPARE ───────────────────────────── */
     .compare { background: var(--gold-pale); }
     .compare-grid {
@@ -397,6 +408,22 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<!-- ═══ REFERENCE VIDEO ════════════════════════ -->
+<section class="section ref-video">
+  <div class="inner">
+    <p class="sec-label fade-up">REFERENCE</p>
+    <h2 class="sec-title fade-up d1">実際の<em>スライスディンクを見る</em></h2>
+    <div class="gold-bar fade-up d2"></div>
+    <div class="ref-embed-wrap fade-up d2">
+      <blockquote class="instagram-media"
+        data-instgrm-permalink="https://www.instagram.com/p/DT3xVTvEu9A/"
+        data-instgrm-version="14"
+        style="background:#fff;border:0;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.12);margin:0 auto;max-width:480px;width:100%;min-width:260px;">
+      </blockquote>
     </div>
   </div>
 </section>
@@ -859,5 +886,6 @@ const sG = new Sim('sim-good','good');
 sG.t = Math.PI / sG.OM / 2; // offset phase
 sB.frame(); sG.frame();
 </script>
+<script async src="//www.instagram.com/embed.js"></script>
 </body>
 </html>
