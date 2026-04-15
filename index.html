@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>スライスディンクの極意 ― 肘を伸ばした「振り子」で運ぶ</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #c8a96e;
+      --gold-light: #fdf6ee;
+      --gold-mid: #fce8d6;
+      --gold-pale: #fdf8f3;
+      --navy: #0e1a2e;
+      --navy-mid: #1a2d4a;
+      --text-dark: #1a1a1a;
+      --text-mid: #444;
+      --text-light: #888;
+      --border: #e8ddd0;
+      --red: #c0392b;
+      --green: #27ae60;
+    }
+
+    /* ── BASE ──────────────────────────────── */
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Hiragino Mincho Pro', Georgia, serif;
+      color: var(--text-dark);
+      background: #fff;
+      line-height: 1.85;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── SCROLL PROGRESS BAR ───────────────── */
+    #progress {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--gold), #e8c87e);
+      z-index: 9999;
+      transition: width 0.1s linear;
+    }
+
+    /* ── BACK TO TOP ───────────────────────── */
+    #top-btn {
+      position: fixed;
+      bottom: 24px; right: 20px;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--navy);
+      border: 1.5px solid var(--gold);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 999;
+    }
+    #top-btn.show { opacity: 1; pointer-events: auto; }
+    #top-btn:hover { transform: translateY(-3px); }
+
+    /* ── SCROLL REVEAL ─────────────────────── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.7s cubic-bezier(.22,1,.36,1), transform 0.7s cubic-bezier(.22,1,.36,1);
+    }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+    .fade-up.d1 { transition-delay: 0.10s; }
+    .fade-up.d2 { transition-delay: 0.20s; }
+    .fade-up.d3 { transition-delay: 0.30s; }
+
+    /* ── SECTION WRAPPERS ──────────────────── */
+    .section { padding: 80px 24px; }
+    @media (max-width: 600px) { .section { padding: 56px 16px; } }
+    .inner { max-width: 880px; margin: 0 auto; }
+
+    .sec-label {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      color: var(--gold);
+      text-align: center;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+    .sec-title {
+      font-size: clamp(20px, 4vw, 34px);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 40px;
+      line-height: 1.45;
+    }
+    .sec-title em { font-style: normal; color: var(--gold); }
+    .gold-bar { width: 36px; height: 2px; background: var(--gold); margin: 0 auto 44px; opacity: 0.7; }
+    @media (max-width: 600px) { .gold-bar { margin-bottom: 32px; } }
+
+    /* ── HERO ──────────────────────────────── */
+    .hero {
+      background: linear-gradient(155deg, #0a1526 0%, #13243f 55%, #1b3660 100%);
+      color: #fff;
+      text-align: center;
+      padding: 72px 20px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% -10%, rgba(200,169,110,0.22) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid rgba(200,169,110,0.7);
+      color: var(--gold);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      padding: 5px 20px;
+      border-radius: 2px;
+      margin-bottom: 24px;
+      font-family: 'Helvetica Neue', sans-serif;
+      animation: fadeIn 1s ease forwards;
+      opacity: 0;
+    }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .hero h1 {
+      font-size: clamp(22px, 5.5vw, 48px);
+      font-weight: 700;
+      line-height: 1.32;
+      margin-bottom: 20px;
+      animation: riseIn 1s 0.2s ease forwards;
+      opacity: 0;
+    }
+    .hero h1 span { color: var(--gold); }
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero-sub {
+      font-size: clamp(13px, 2.2vw, 15px);
+      color: rgba(255,255,255,0.68);
+      max-width: 500px;
+      margin: 0 auto 32px;
+      line-height: 2;
+      animation: riseIn 1s 0.4s ease forwards;
+      opacity: 0;
+    }
+    .hero-divider {
+      width: 36px; height: 2px;
+      background: var(--gold);
+      margin: 0 auto;
+      opacity: 0;
+      animation: riseIn 1s 0.55s ease forwards;
+    }
+    .hero-canvas-wrap {
+      margin: 36px auto 0;
+      max-width: 460px;
+      width: 100%;
+    }
+    #hero-canvas { display: block; width: 100%; height: auto; }
+
+    /* ── SIMULATION ────────────────────────── */
+    .sim { background: #040c18; }
+    .sim .sec-title { color: #fff; }
+    .sim .gold-bar { opacity: 0.5; }
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 640px) { .sim-grid { grid-template-columns: 1fr; gap: 14px; } }
+
+    .sim-card {
+      border-radius: 12px;
+      overflow: hidden;
+      background: #080f1e;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .sim-card canvas { display: block; width: 100%; height: auto; }
+    .sim-tag {
+      position: absolute;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      padding: 4px 14px;
+      border-radius: 20px;
+      white-space: nowrap;
+      font-family: 'Helvetica Neue', sans-serif;
+      pointer-events: none;
+    }
+    .sim-tag.bad  { background: rgba(192,57,43,0.9);  color: #fff; }
+    .sim-tag.good { background: rgba(200,169,110,0.9); color: #1a0e00; font-weight: 700; }
+    .sim-caption {
+      padding: 14px 18px;
+      font-size: 12px;
+      line-height: 1.75;
+      color: rgba(255,255,255,0.52);
+      text-align: center;
+      font-family: 'Helvetica Neue', sans-serif;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .sim-caption strong { color: var(--gold); font-weight: 600; }
+
+    /* ── COMPARE ───────────────────────────── */
+    .compare { background: var(--gold-pale); }
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 580px) { .compare-grid { grid-template-columns: 1fr; } }
+
+    .cmp-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 32px 26px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.05);
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    @media (hover: hover) { .cmp-card:hover { transform: translateY(-4px); box-shadow: 0 10px 32px rgba(0,0,0,0.1); } }
+    .cmp-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 4px;
+      border-radius: 12px 12px 0 0;
+    }
+    .cmp-card.bad::before  { background: var(--red); }
+    .cmp-card.good::before { background: var(--gold); }
+
+    .cmp-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+    .cmp-icon {
+      width: 46px; height: 46px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .cmp-card.bad  .cmp-icon { background: #fdecea; }
+    .cmp-card.good .cmp-icon { background: #fdf3e4; }
+    .cmp-title { font-size: 16px; font-weight: 700; line-height: 1.3; }
+    .cmp-card.bad  .cmp-title { color: var(--red); }
+    .cmp-card.good .cmp-title { color: #7a5c1e; }
+    .cmp-tag { font-size: 11px; color: var(--text-light); margin-top: 2px; font-family: 'Helvetica Neue', sans-serif; }
+
+    .cmp-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .cmp-list li { display: flex; gap: 10px; font-size: 14px; line-height: 1.75; color: var(--text-mid); }
+    .cmp-list li svg { flex-shrink: 0; margin-top: 3px; }
+    .cmp-label { font-weight: 700; display: block; color: var(--text-dark); margin-bottom: 2px; font-size: 13px; }
+
+    /* ── BENEFITS ──────────────────────────── */
+    .benefits { background: #fff; }
+    .ben-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 720px) { .ben-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 480px) { .ben-grid { grid-template-columns: 1fr; } }
+
+    .ben-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px 22px;
+      text-align: center;
+      transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+      background: #fff;
+    }
+    @media (hover: hover) {
+      .ben-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 28px rgba(200,169,110,0.18);
+        border-color: rgba(200,169,110,0.5);
+      }
+    }
+    .ben-num {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      margin-bottom: 16px;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+    .ben-icon { margin: 0 auto 18px; width: 52px; height: 52px; }
+    .ben-title { font-size: 15px; font-weight: 700; margin-bottom: 10px; line-height: 1.45; }
+    .ben-desc { font-size: 13px; color: var(--text-light); line-height: 1.85; }
+
+    /* ── PRINCIPLE ─────────────────────────── */
+    .principle {
+      background: linear-gradient(150deg, #0d1b30 0%, #081325 100%);
+      color: #fff;
+    }
+    .principle .sec-title { color: #fff; }
+    .principle .sec-label { opacity: 0.8; }
+
+    .pri-box {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(200,169,110,0.28);
+      border-radius: 12px;
+      padding: 36px 40px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 600px) { .pri-box { padding: 26px 20px; } }
+    .pri-box h3 { color: var(--gold); font-size: clamp(16px, 2.5vw, 19px); margin-bottom: 14px; }
+    .pri-box p  { font-size: clamp(13px, 2vw, 15px); color: rgba(255,255,255,0.75); line-height: 2; }
+
+    .pri-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 640px) { .pri-steps { grid-template-columns: 1fr; } }
+
+    .pri-step {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(200,169,110,0.16);
+      border-radius: 10px;
+      padding: 28px 18px;
+      text-align: center;
+      transition: background 0.25s, border-color 0.25s;
+    }
+    @media (hover: hover) { .pri-step:hover { background: rgba(200,169,110,0.08); border-color: rgba(200,169,110,0.3); } }
+    .pri-num  { font-size: 10px; letter-spacing: 0.18em; color: var(--gold); margin-bottom: 14px; font-family: 'Helvetica Neue', sans-serif; }
+    .pri-h    { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 10px; line-height: 1.4; }
+    .pri-desc { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.85; }
+
+    /* ── FOOTER ────────────────────────────── */
+    footer {
+      background: #060f1c;
+      border-top: 1px solid rgba(200,169,110,0.15);
+      color: rgba(255,255,255,0.35);
+      text-align: center;
+      padding: 44px 24px 36px;
+      font-size: 12px;
+      font-family: 'Helvetica Neue', sans-serif;
+    }
+    .ft-brand {
+      font-size: 14px;
+      color: var(--gold);
+      letter-spacing: 0.16em;
+      margin-bottom: 12px;
+      font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    }
+    .ft-line { width: 28px; height: 1px; background: rgba(200,169,110,0.3); margin: 16px auto; }
+    .ft-copy { font-size: 11px; color: rgba(255,255,255,0.2); letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+
+<!-- scroll progress -->
+<div id="progress"></div>
+
+<!-- back to top -->
+<button id="top-btn" aria-label="トップへ戻る" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c8a96e" stroke-width="2" stroke-linecap="round">
+    <polyline points="18 15 12 9 6 15"/>
+  </svg>
+</button>
+
+<!-- ═══ HERO ═══════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">PICKLEBALL TECHNIQUE</div>
+  <h1>スライスディンクの極意<br><span>「振り子」で運ぶ</span></h1>
+  <p class="hero-sub">
+    スライスディンクの質を高める鍵は、肘の曲げ伸ばしを抑えることにあります。<br>
+    不安定な「切る」動作と、安定感抜群の「振り子」動作の決定的な違いを解説します。
+  </p>
+  <div class="hero-divider"></div>
+  <div class="hero-canvas-wrap">
+    <canvas id="hero-canvas" width="640" height="240"></canvas>
+  </div>
+</section>
+
+<!-- ═══ SIMULATION ══════════════════════════════ -->
+<section class="section sim">
+  <div class="inner">
+    <p class="sec-label fade-up">LIVE SIMULATION</p>
+    <h2 class="sec-title fade-up d1">動きの違いを<em>リアルタイムで比較</em></h2>
+    <div class="gold-bar fade-up d2"></div>
+    <div class="sim-grid fade-up d2">
+
+      <div class="sim-card">
+        <span class="sim-tag bad">切るスライス</span>
+        <canvas id="sim-bad"  width="400" height="310"></canvas>
+        <div class="sim-caption">
+          肘が曲がるたびに面がブレる。<br>
+          <strong>軌道がバラバラ</strong>で不安定。
+        </div>
+      </div>
+
+      <div class="sim-card">
+        <span class="sim-tag good">振り子スライス</span>
+        <canvas id="sim-good" width="400" height="310"></canvas>
+        <div class="sim-caption">
+          肩だけ動かし肘は固定。<br>
+          <strong>常に同じ低弾道</strong>で安定。
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMPARE ═════════════════════════════════ -->
+<section class="section compare">
+  <div class="inner">
+    <p class="sec-label fade-up">COMPARISON</p>
+    <h2 class="sec-title fade-up d1">2つの打ち方、<em>決定的な違い</em></h2>
+    <div class="gold-bar fade-up d2"></div>
+    <div class="compare-grid">
+
+      <div class="cmp-card bad fade-up d1">
+        <div class="cmp-head">
+          <div class="cmp-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="#c0392b" fill="none" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </div>
+          <div>
+            <div class="cmp-title">「切る」スライス</div>
+            <div class="cmp-tag">肘の曲げ伸ばし ／ 避けるべき</div>
+          </div>
+        </div>
+        <ul class="cmp-list">
+          <li>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c0392b" fill="none" stroke-width="2" stroke-linecap="round" style="margin-top:4px;flex-shrink:0">
+              <polyline points="13 17 18 12 13 7"/><path d="M6 12h12"/>
+            </svg>
+            <span><span class="cmp-label">動作の複雑さがミスを誘発</span>肘を使うと面がブレやすく、相手の球威に負けてしまいます。</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c0392b" fill="none" stroke-width="2" stroke-linecap="round" style="margin-top:4px;flex-shrink:0">
+              <polyline points="13 17 18 12 13 7"/><path d="M6 12h12"/>
+            </svg>
+            <span><span class="cmp-label">防御に弱く用途が限定的</span>浮いた球には使えますが、厳しい返球への対応には向きません。</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="cmp-card good fade-up d2">
+        <div class="cmp-head">
+          <div class="cmp-icon">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="#c8a96e" fill="none" stroke-width="2" stroke-linecap="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div>
+            <div class="cmp-title">「振り子」スライス</div>
+            <div class="cmp-tag">肘を固定 ／ 推奨される</div>
+          </div>
+        </div>
+        <ul class="cmp-list">
+          <li>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c8a96e" fill="none" stroke-width="2" stroke-linecap="round" style="margin-top:4px;flex-shrink:0">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span><span class="cmp-label">安定した面でミスを減らす</span>肘を固定することで面がブレず、どんな球威にも対応できます。</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="#c8a96e" fill="none" stroke-width="2" stroke-linecap="round" style="margin-top:4px;flex-shrink:0">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span><span class="cmp-label">攻守両面に対応できる</span>低い弾道で安定して返すことで、あらゆる場面で使えます。</span>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ BENEFITS ════════════════════════════════ -->
+<section class="section benefits">
+  <div class="inner">
+    <p class="sec-label fade-up">BENEFITS</p>
+    <h2 class="sec-title fade-up d1">「振り子」スライスの<em>3つのメリット</em></h2>
+    <div class="gold-bar fade-up d2"></div>
+    <div class="ben-grid">
+
+      <div class="ben-card fade-up d1">
+        <div class="ben-num">01</div>
+        <div class="ben-icon">
+          <svg viewBox="0 0 24 24" style="width:52px;height:52px;stroke:#c8a96e;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;">
+            <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>
+          </svg>
+        </div>
+        <div class="ben-title">肩を支点に<br>一定のリズムで振る</div>
+        <p class="ben-desc">肘を伸ばしたまま振ることで、常に同じ軌道での返球が可能になります。</p>
+      </div>
+
+      <div class="ben-card fade-up d2">
+        <div class="ben-num">02</div>
+        <div class="ben-icon">
+          <svg viewBox="0 0 24 24" style="width:52px;height:52px;stroke:#c8a96e;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;">
+            <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5l6.74-6.76z"/>
+            <line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <div class="ben-title">ボールの「重み」を<br>無効化する</div>
+        <p class="ben-desc">余計な関節の動きを省くことで、強い球もフワッと軽く返せます。</p>
+      </div>
+
+      <div class="ben-card fade-up d3">
+        <div class="ben-num">03</div>
+        <div class="ben-icon">
+          <svg viewBox="0 0 24 24" style="width:52px;height:52px;stroke:#c8a96e;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="13 6 19 12 13 18"/>
+            <circle cx="5" cy="12" r="2"/>
+          </svg>
+        </div>
+        <div class="ben-title">「切る」ではなく<br>「運ぶ」</div>
+        <p class="ben-desc">腕全体を振り子にすれば、どんな球も低い弾道で安定して返ります。</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRINCIPLE ═══════════════════════════════ -->
+<section class="section principle">
+  <div class="inner">
+    <p class="sec-label fade-up">CORE PRINCIPLE</p>
+    <h2 class="sec-title fade-up d1">極意を<em>3ステップ</em>で習得する</h2>
+    <div class="gold-bar fade-up d2"></div>
+    <div class="pri-box fade-up d2">
+      <h3>なぜ「肘の固定」が鍵なのか？</h3>
+      <p>スライスディンクでよく見られる失敗は、肘を曲げ伸ばしする「切る」動作です。複数の関節が介在するため、わずかなタイミングのズレが面のブレを引き起こしミスショットへとつながります。肘を伸ばして固定し、肩だけを支点にした「振り子」動作に変えることで、シンプルな弧を描く一定の軌道が生まれ、どんな球でも安定して低い弾道で返球できるようになります。</p>
+    </div>
+    <div class="pri-steps">
+      <div class="pri-step fade-up d1">
+        <div class="pri-num">STEP 01</div>
+        <div class="pri-h">肘を伸ばす</div>
+        <p class="pri-desc">スイング開始前に肘をしっかり伸ばし、スイング中は固定する意識を持ちましょう。</p>
+      </div>
+      <div class="pri-step fade-up d2">
+        <div class="pri-num">STEP 02</div>
+        <div class="pri-h">肩を支点に振る</div>
+        <p class="pri-desc">腕全体を一本の棒のように扱い、肩関節だけでスイングします。</p>
+      </div>
+      <div class="pri-step fade-up d3">
+        <div class="pri-num">STEP 03</div>
+        <div class="pri-h">「運ぶ」感覚で返す</div>
+        <p class="pri-desc">ボールを弾くのではなく、低い弾道でそっと押し送るイメージで打ちましょう。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ══════════════════════════════════ -->
+<footer>
+  <div class="ft-brand">PICKLEBALL TECHNIQUE GUIDE</div>
+  <p>スライスディンクの極意 ― 肘を伸ばした「振り子」で運ぶ</p>
+  <div class="ft-line"></div>
+  <p class="ft-copy">&copy; 2026 Pickleball Technique Guide. All rights reserved.</p>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════
+   SCROLL PROGRESS + BACK TO TOP
+══════════════════════════════════════════════ */
+const prog = document.getElementById('progress');
+const topBtn = document.getElementById('top-btn');
+window.addEventListener('scroll', () => {
+  const st = window.scrollY;
+  const docH = document.documentElement.scrollHeight - window.innerHeight;
+  prog.style.width = (st / docH * 100) + '%';
+  topBtn.classList.toggle('show', st > 320);
+}, { passive: true });
+
+/* ═══════════════════════════════════════════════
+   SCROLL REVEAL
+══════════════════════════════════════════════ */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+
+/* ═══════════════════════════════════════════════
+   UTILITY
+══════════════════════════════════════════════ */
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y); ctx.closePath();
+}
+const ha = (hex, a) => hex + Math.round(a*255).toString(16).padStart(2,'0');
+
+/* ═══════════════════════════════════════════════
+   HERO CANVAS
+══════════════════════════════════════════════ */
+(function() {
+  const cv = document.getElementById('hero-canvas');
+  const cx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const G = '#c8a96e';
+  const PX = W/2, PY = 50, L = 140, MAX = 0.68, OM = 0.55;
+  let t = 0;
+  const trail = [];
+
+  function frame() {
+    cx.clearRect(0, 0, W, H);
+    const th = MAX * Math.sin(OM * t);
+    const ex = PX + L * Math.sin(th);
+    const ey = PY + L * Math.cos(th);
+
+    // arc guide
+    cx.save(); cx.setLineDash([5,5]);
+    cx.strokeStyle = 'rgba(200,169,110,0.15)'; cx.lineWidth = 1.5;
+    cx.beginPath();
+    for (let a = -MAX; a <= MAX; a += 0.04) {
+      const tx = PX + L*Math.sin(a), ty = PY + L*Math.cos(a);
+      a <= -MAX+0.041 ? cx.moveTo(tx,ty) : cx.lineTo(tx,ty);
+    }
+    cx.stroke(); cx.restore();
+
+    // arm shadow
+    cx.strokeStyle='rgba(0,0,0,0.3)'; cx.lineWidth=6; cx.lineCap='round';
+    cx.beginPath(); cx.moveTo(PX+2,PY+2); cx.lineTo(ex+2,ey+2); cx.stroke();
+
+    // arm
+    cx.strokeStyle=G; cx.lineWidth=4; cx.lineCap='round';
+    cx.beginPath(); cx.moveTo(PX,PY); cx.lineTo(ex,ey); cx.stroke();
+
+    // pivot
+    cx.strokeStyle=G; cx.lineWidth=2;
+    cx.beginPath(); cx.arc(PX,PY,10,0,Math.PI*2); cx.stroke();
+    cx.fillStyle=G; cx.beginPath(); cx.arc(PX,PY,4,0,Math.PI*2); cx.fill();
+
+    // paddle
+    const ang = Math.atan2(ey-PY, ex-PX);
+    cx.save(); cx.translate(ex,ey); cx.rotate(ang+Math.PI/2);
+    cx.fillStyle='rgba(200,169,110,0.16)'; cx.strokeStyle=G; cx.lineWidth=2;
+    rrect(cx,-16,-8,32,22,5); cx.fill(); cx.stroke();
+    cx.strokeStyle='rgba(200,169,110,0.5)'; cx.lineWidth=1;
+    cx.beginPath(); cx.moveTo(-10,8); cx.lineTo(10,8); cx.stroke();
+    cx.restore();
+
+    // trail
+    trail.push({x:ex,y:ey});
+    if (trail.length > 30) trail.shift();
+    for (let i=1; i<trail.length; i++) {
+      const a=i/trail.length;
+      cx.beginPath(); cx.strokeStyle=ha(G,a*0.3); cx.lineWidth=2+a*2; cx.lineCap='round';
+      cx.moveTo(trail[i-1].x,trail[i-1].y); cx.lineTo(trail[i].x,trail[i].y); cx.stroke();
+    }
+
+    // ball
+    const bg = cx.createRadialGradient(ex-2,ey-2,1,ex,ey,7);
+    bg.addColorStop(0,'#fff'); bg.addColorStop(1,G);
+    cx.fillStyle=bg; cx.beginPath(); cx.arc(ex,ey,6,0,Math.PI*2); cx.fill();
+
+    // check at rightmost
+    if (th > MAX*0.84) {
+      const ox=ex+18, oy=ey+2;
+      cx.strokeStyle='#4cda8a'; cx.lineWidth=2.5; cx.lineCap='round'; cx.lineJoin='round';
+      cx.beginPath(); cx.moveTo(ox,oy+6); cx.lineTo(ox+5,oy+12); cx.lineTo(ox+15,oy-1); cx.stroke();
+    }
+
+    t += 0.016;
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* ═══════════════════════════════════════════════
+   SIMULATION
+══════════════════════════════════════════════ */
+class Sim {
+  constructor(id, mode) {
+    this.cv = document.getElementById(id);
+    this.cx = this.cv.getContext('2d');
+    this.W = this.cv.width; this.H = this.cv.height;
+    this.mode = mode;
+    this.t = 0; this.balls = []; this.lastLaunch = -99;
+    this.PX = this.W/2; this.PY = 68;
+    this.L  = 112; this.L1 = 60; this.L2 = 58;
+    this.MAX = 0.72; this.OM = 0.62;
+    this.ep = 0.95; // elbow phase
+  }
+
+  good() {
+    const th = this.MAX * Math.sin(this.OM * this.t);
+    const dth = this.MAX * this.OM * Math.cos(this.OM * this.t);
+    return { th, dth, ex: this.PX + this.L*Math.sin(th), ey: this.PY + this.L*Math.cos(th) };
+  }
+
+  bad() {
+    const th = this.MAX * Math.sin(this.OM * this.t);
+    const dth = this.MAX * this.OM * Math.cos(this.OM * this.t);
+    const elb = 0.44 * Math.sin(this.OM * 2.4 * this.t + this.ep);
+    const mx = this.PX + this.L1*Math.sin(th), my = this.PY + this.L1*Math.cos(th);
+    return { th, dth, elb, mx, my,
+      ex: mx + this.L2*Math.sin(th+elb),
+      ey: my + this.L2*Math.cos(th+elb) };
+  }
+
+  launch(ex, ey, th, dth, elb) {
+    const period = (2*Math.PI)/this.OM;
+    if (Math.abs(th)<0.09 && dth>0 && this.t-this.lastLaunch > period*0.9) {
+      this.lastLaunch = this.t;
+      const spd = 5, base = -0.28;
+      const ang = base + (this.mode==='bad' ? elb*1.9 : 0);
+      this.balls.push({
+        x:ex, y:ey, vx:spd*Math.cos(ang), vy:spd*Math.sin(ang),
+        age:0, life:88, trail:[],
+        col: this.mode==='good' ? '#c8a96e' : '#e74c3c'
+      });
+      if (this.balls.length > 4) this.balls.shift();
+    }
+  }
+
+  step() {
+    for (const b of this.balls) {
+      b.trail.push({x:b.x,y:b.y}); if(b.trail.length>20) b.trail.shift();
+      b.x+=b.vx; b.y+=b.vy; b.vy+=0.09; b.age++;
+    }
+    this.balls = this.balls.filter(b => b.age<b.life && b.x<this.W+30);
+  }
+
+  pivot(x, y, col) {
+    const cx=this.cx;
+    cx.beginPath(); cx.strokeStyle=col; cx.lineWidth=2;
+    cx.arc(x,y,11,0,Math.PI*2); cx.stroke();
+    cx.beginPath(); cx.fillStyle=col; cx.arc(x,y,4,0,Math.PI*2); cx.fill();
+  }
+
+  paddle(x, y, ang, col) {
+    const cx=this.cx;
+    cx.save(); cx.translate(x,y); cx.rotate(ang+Math.PI/2);
+    cx.fillStyle=col+'28'; cx.strokeStyle=col; cx.lineWidth=2;
+    rrect(cx,-14,-7,28,20,4); cx.fill(); cx.stroke();
+    cx.strokeStyle=col+'70'; cx.lineWidth=1;
+    cx.beginPath(); cx.moveTo(-9,8); cx.lineTo(9,8); cx.stroke();
+    cx.restore();
+  }
+
+  drawBalls() {
+    const cx=this.cx;
+    for (const b of this.balls) {
+      const alpha = 1 - b.age/b.life;
+      if (b.trail.length>1) {
+        for (let i=1; i<b.trail.length; i++) {
+          const a = (i/b.trail.length)*alpha*0.55;
+          cx.beginPath(); cx.strokeStyle=ha(b.col,a); cx.lineWidth=2.5; cx.lineCap='round';
+          cx.moveTo(b.trail[i-1].x,b.trail[i-1].y); cx.lineTo(b.trail[i].x,b.trail[i].y); cx.stroke();
+        }
+      }
+      const g = cx.createRadialGradient(b.x-1,b.y-1,1,b.x,b.y,5.5);
+      g.addColorStop(0,'#fff'); g.addColorStop(1,b.col);
+      cx.globalAlpha=alpha; cx.fillStyle=g; cx.beginPath(); cx.arc(b.x,b.y,5,0,Math.PI*2); cx.fill(); cx.globalAlpha=1;
+    }
+  }
+
+  frame() {
+    const {cx:c, W, H} = this;
+    const bgG = c.createLinearGradient(0,0,0,H);
+    if (this.mode==='good') { bgG.addColorStop(0,'#07121f'); bgG.addColorStop(1,'#040c18'); }
+    else                    { bgG.addColorStop(0,'#160707'); bgG.addColorStop(1,'#0c0404'); }
+    c.fillStyle=bgG; c.fillRect(0,0,W,H);
+
+    // ground line
+    c.strokeStyle='rgba(255,255,255,0.06)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(0,H-24); c.lineTo(W,H-24); c.stroke();
+
+    if (this.mode==='good') {
+      const {th,dth,ex,ey} = this.good();
+
+      // arc guide
+      c.save(); c.setLineDash([4,5]);
+      c.strokeStyle='rgba(200,169,110,0.12)'; c.lineWidth=1.5;
+      c.beginPath();
+      for (let a=-this.MAX; a<=this.MAX; a+=0.04) {
+        const tx=this.PX+this.L*Math.sin(a), ty=this.PY+this.L*Math.cos(a);
+        a<=-this.MAX+0.041 ? c.moveTo(tx,ty) : c.lineTo(tx,ty);
+      }
+      c.stroke(); c.restore();
+
+      // arm shadow + arm
+      c.strokeStyle='rgba(0,0,0,0.35)'; c.lineWidth=7; c.lineCap='round';
+      c.beginPath(); c.moveTo(this.PX+2,this.PY+2); c.lineTo(ex+2,ey+2); c.stroke();
+      c.strokeStyle='#c8a96e'; c.lineWidth=5;
+      c.beginPath(); c.moveTo(this.PX,this.PY); c.lineTo(ex,ey); c.stroke();
+
+      // "固定" label at mid-arm
+      const mx=this.PX+(this.L/2)*Math.sin(th), my2=this.PY+(this.L/2)*Math.cos(th);
+      c.fillStyle='rgba(200,169,110,0.7)'; c.font='11px sans-serif'; c.textAlign='center';
+      c.fillText('固定', mx-(Math.sin(th)>0?22:-22), my2);
+
+      this.pivot(this.PX, this.PY, '#c8a96e');
+      this.paddle(ex, ey, Math.atan2(ey-this.PY, ex-this.PX), '#c8a96e');
+      this.launch(ex,ey,th,dth,0);
+
+    } else {
+      const {th,dth,elb,mx,my,ex,ey} = this.bad();
+
+      // upper arm
+      c.strokeStyle='rgba(0,0,0,0.35)'; c.lineWidth=7; c.lineCap='round';
+      c.beginPath(); c.moveTo(this.PX+2,this.PY+2); c.lineTo(mx+2,my+2); c.stroke();
+      c.strokeStyle='#c0392b'; c.lineWidth=5;
+      c.beginPath(); c.moveTo(this.PX,this.PY); c.lineTo(mx,my); c.stroke();
+
+      // forearm
+      c.strokeStyle='rgba(0,0,0,0.25)'; c.lineWidth=5;
+      c.beginPath(); c.moveTo(mx+2,my+2); c.lineTo(ex+2,ey+2); c.stroke();
+      c.strokeStyle='#e74c3c'; c.lineWidth=4;
+      c.beginPath(); c.moveTo(mx,my); c.lineTo(ex,ey); c.stroke();
+
+      // elbow stress rings
+      const stress = Math.abs(elb);
+      for (let r=8; r<=8+stress*20; r+=5) {
+        c.beginPath(); c.arc(mx,my,r,0,Math.PI*2);
+        c.strokeStyle=`rgba(231,76,60,${Math.max(0,0.45-r*0.015)})`; c.lineWidth=1.5; c.stroke();
+      }
+      c.fillStyle='#e74c3c'; c.beginPath(); c.arc(mx,my,6,0,Math.PI*2); c.fill();
+      c.fillStyle='#fff'; c.beginPath(); c.arc(mx,my,2.5,0,Math.PI*2); c.fill();
+
+      // label
+      c.fillStyle='rgba(231,76,60,0.85)'; c.font='bold 10px sans-serif'; c.textAlign='center';
+      c.fillText('曲がる!', mx+(Math.sin(th)>0?22:-22), my-12);
+
+      this.pivot(this.PX,this.PY,'#c0392b');
+      this.paddle(ex,ey,Math.atan2(ey-this.PY,ex-this.PX)+elb*0.5,'#e74c3c');
+      this.launch(ex,ey,th,dth,elb);
+    }
+
+    this.drawBalls();
+    this.step();
+    this.t += 0.016;
+    requestAnimationFrame(() => this.frame());
+  }
+}
+
+const sB = new Sim('sim-bad','bad');
+const sG = new Sim('sim-good','good');
+sG.t = Math.PI / sG.OM / 2; // offset phase
+sB.frame(); sG.frame();
+</script>
+</body>
+</html>
