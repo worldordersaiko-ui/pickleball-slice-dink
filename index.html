@@ -708,11 +708,12 @@ class Sim {
   bad() {
     const th = this.MAX * Math.sin(this.OM * this.t);
     const dth = this.MAX * this.OM * Math.cos(this.OM * this.t);
-    const elb = 0.44 * Math.sin(this.OM * 2.4 * this.t + this.ep);
+    // バックスイング時(th<0)だけ肘が曲がり、振り切った後(th≥0)は真っ直ぐ維持
+    const elb = 0.55 * Math.max(0, -th / this.MAX);
     const mx = this.PX + this.L1*Math.sin(th), my = this.PY + this.L1*Math.cos(th);
     return { th, dth, elb, mx, my,
-      ex: mx + this.L2*Math.sin(th+elb),
-      ey: my + this.L2*Math.cos(th+elb) };
+      ex: mx + this.L2*Math.sin(th-elb),
+      ey: my + this.L2*Math.cos(th-elb) };
   }
 
   launch(ex, ey, th, dth, elb) {
@@ -720,7 +721,9 @@ class Sim {
     if (Math.abs(th)<0.09 && dth>0 && this.t-this.lastLaunch > period*0.9) {
       this.lastLaunch = this.t;
       const spd = 5, base = -0.28;
-      const ang = base + (this.mode==='bad' ? elb*1.9 : 0);
+      // bad: タイミングのズレで打ち出し角がバラつく（elb非依存）
+      const jitter = this.mode === 'bad' ? 0.38 * Math.sin(this.t * 0.47 + this.ep) : 0;
+      const ang = base + jitter;
       this.balls.push({
         x:ex, y:ey, vx:spd*Math.cos(ang), vy:spd*Math.sin(ang),
         age:0, life:88, trail:[],
@@ -840,7 +843,7 @@ class Sim {
       c.fillText('曲がる!', mx+(Math.sin(th)>0?22:-22), my-12);
 
       this.pivot(this.PX,this.PY,'#c0392b');
-      this.paddle(ex,ey,Math.atan2(ey-this.PY,ex-this.PX)+elb*0.5,'#e74c3c');
+      this.paddle(ex,ey,Math.atan2(ey-this.PY,ex-this.PX)-elb*0.5,'#e74c3c');
       this.launch(ex,ey,th,dth,elb);
     }
 
